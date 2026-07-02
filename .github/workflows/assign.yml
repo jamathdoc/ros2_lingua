@@ -17,3 +17,9 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           maintainers: "purahan"
+          assigned_newcomer_text: |
+            Hey @{{ handle }}, thanks for jumping in! 🎉
+
+            Take a look at [CONTRIBUTING.md](CONTRIBUTING.md) to get set up, and feel free to ask questions here if you get stuck.
+
+            > This issue auto-unassigns after **{{ total_days }} days** of inactivity.

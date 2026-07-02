@@ -176,6 +176,7 @@ class TestMockNodes(unittest.TestCase):
             "pick_up_object",
             "place_object",
             "wave_hand",
+            "open_door",
             "say",
         }
         missing = expected - set(caps.keys())
@@ -209,7 +210,7 @@ class TestMockNodes(unittest.TestCase):
     def test_05_manipulation_capabilities(self):
         """Manipulation capabilities should have manipulation tags."""
         caps = self.node.get_capabilities()
-        for name in ["pick_up_object", "place_object", "wave_hand"]:
+        for name in ["pick_up_object", "place_object", "wave_hand", "open_door"]:
             self.assertIn(name, caps)
             self.assertIn("manipulation", caps[name].get("tags", []))
 

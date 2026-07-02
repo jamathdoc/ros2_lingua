@@ -7,6 +7,7 @@ Advertises capabilities:
   - pick_up_object : picks up a named object
   - place_object   : places the held object on a named surface
   - wave_hand      : waves at a person (social gesture)
+  - open_door       : opens a door 
 
 In a real robot, this would wrap MoveIt 2, a custom arm controller,
 or your robot's manipulation stack.
@@ -82,6 +83,16 @@ class MockManipulationNode(LinguaMixin, Node):
             MockAction,
             "humanoid/wave",
             execute_callback=self._execute_wave,
+            goal_callback=self._goal_callback,
+            cancel_callback=self._cancel_callback,
+            callback_group=self._callback_group,
+        )
+
+        self._open_door_server = ActionServer(
+            self,
+            MockAction,
+            "humanoid/open_door",
+            execute_callback=self._execute_open_door,
             goal_callback=self._goal_callback,
             cancel_callback=self._cancel_callback,
             callback_group=self._callback_group,
@@ -165,6 +176,25 @@ class MockManipulationNode(LinguaMixin, Node):
             tags=["manipulation", "social"],
         ))
 
+        self.register_lingua_capability(Capability(
+            name="open_door",
+            description="Opens a door.",
+            ros_action="humanoid/open_door",
+            parameters=[
+                CapabilityParameter(
+                    name="door",
+                    type="string",
+                    description="Door to open.",
+                    required=False,
+                    default="nearest",
+                ),
+            ],
+            preconditions=["arm_is_free"],
+            postconditions=[],
+            metadata={},
+            tags=["manipulation"],
+        ))
+
         self._log("MockManipulationNode ready. Arm is free.")
         self.get_logger().info("MockManipulationNode ready.")
 
@@ -240,7 +270,15 @@ class MockManipulationNode(LinguaMixin, Node):
         self._log("✅ Wave complete.")
         goal_handle.succeed()
         return MockAction.Result()
-
+    def _execute_open_door(self, goal_handle):
+        door = getattr(goal_handle.request, "_door", "nearest")
+        self.get_logger().info(f"Manipulation: opening {door}...")
+        self._log(f"🚪 Opening {door}...")
+        time.sleep(2.0)
+        self._log("✅ Door opened.")
+        goal_handle.succeed()
+        return MockAction.Result()
+    
     def _publish_arm_state(self):
         msg = String()
         msg.data = f"holding:{self._held_object or 'nothing'}"

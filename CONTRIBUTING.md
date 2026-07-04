@@ -171,3 +171,7 @@ automatically unassigned so others can pick it up.
 
 If you're using `ros2_lingua` on a real robot, we'd especially love to hear 
 about it — open an issue and tell us what you're building.
+
+## Questions and Ideas
+
+Not sure if something's a bug, or want to float an idea before opening a formal issue? Use [Discussions](https://github.com/purahan/ros2_lingua/discussions) instead — keeps Issues focused on actionable bugs and features.

@@ -5,7 +5,6 @@ A clean CLI tool for sending natural language instructions to the robot.
 
 Usage:
     ros2 run ros2_lingua_mock cli "go to the table and pick up the bottle"
-    ros2 run ros2_lingua_mock cli --namespace robot_1 "go to the table and pick up the bottle"
 
 Or as a ros2 verb (if installed):
     ros2 lingua ground "go to the table and pick up the bottle"
@@ -14,10 +13,12 @@ Prints the resulting plan in a human-readable format and shows
 live execution status as the dispatcher works through the steps.
 """
 
+import sys
 import argparse
 import json
 import time
 import rclpy
+import rclpy.utilities
 from rclpy.node import Node
 from std_msgs.msg import String
 
@@ -36,11 +37,12 @@ class LinguaCLI(Node):
     def __init__(self, instruction: str, namespace: str = ""):
         super().__init__("lingua_cli")
         self._instruction = instruction
-
-        prefix = f"/{namespace}" if namespace else ""
         self._done = False
 
-        self._client = self.create_client(GroundInstruction, f"{prefix}/lingua/ground")
+        prefix = f"/{namespace}" if namespace else ""
+        self._service_name = f"{prefix}/lingua/ground"
+
+        self._client = self.create_client(GroundInstruction, self._service_name)
         self._status_sub = self.create_subscription(
             String, f"{prefix}/lingua/execution_status", self._handle_status, 10
         )
@@ -50,7 +52,7 @@ class LinguaCLI(Node):
         print(f'📢  Instruction: "{self._instruction}"\n')
 
         if not self._client.wait_for_service(timeout_sec=5.0):
-            print("❌  /lingua/ground service not found.")
+            print(f"❌  {self._service_name} service not found.")
             print("    Is the grounding node running?")
             print("    Try: ros2 launch ros2_lingua_mock demo.launch.py")
             return
@@ -115,6 +117,11 @@ class LinguaCLI(Node):
 
 
 def main():
+    rclpy.init()
+    
+    # Remove ROS 2 arguments so argparse doesn't trip on them
+    remaining_args = rclpy.utilities.remove_ros_args(sys.argv)
+    
     parser = argparse.ArgumentParser(
         description="Send a natural language instruction to the ros2_lingua grounding engine."
     )
@@ -129,11 +136,10 @@ def main():
         nargs="+",
         help="Natural language instruction to send to the robot",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(remaining_args[1:])
 
     instruction = " ".join(args.instruction)
 
-    rclpy.init()
     cli = LinguaCLI(instruction, namespace=args.namespace)
     try:
         cli.run()

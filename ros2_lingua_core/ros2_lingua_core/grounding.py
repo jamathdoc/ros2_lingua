@@ -229,6 +229,7 @@ class GroundingEngine:
             )
 
         # Check cache if TTL is enabled
+        cache_key = None  # initialized here to avoid NameError in the retry loop below
         if self._cache_ttl_sec > 0:
             instruction_hash = hashlib.md5(instruction.encode()).hexdigest()
             # Include both capability names and current state in the registry hash
@@ -266,7 +267,7 @@ class GroundingEngine:
                 if plan.feasible and self._auto_chain:
                     plan = self._apply_auto_chaining(plan, instruction)
 
-                if self._cache_ttl_sec > 0:
+                if cache_key is not None:
                     self._plan_cache[cache_key] = (plan, time.time())
 
                 return plan
@@ -313,12 +314,16 @@ class GroundingEngine:
 
     def _parse_response(self, raw: str, instruction: str) -> ActionPlan:
         """Parse the LLM JSON response into an ActionPlan."""
-        # Strip any accidental markdown fences
+        # Strip any accidental markdown fences, including language tags like ```json
         cleaned = raw.strip()
         if cleaned.startswith("```"):
-            cleaned = "\n".join(cleaned.split("\n")[1:])
+            # Drop the opening fence line entirely (handles ``` and ```json etc.)
+            lines = cleaned.split("\n")
+            cleaned = "\n".join(lines[1:])
         if cleaned.endswith("```"):
-            cleaned = "\n".join(cleaned.split("\n")[:-1])
+            lines = cleaned.split("\n")
+            cleaned = "\n".join(lines[:-1])
+        cleaned = cleaned.strip()
 
         try:
             data = json.loads(cleaned)

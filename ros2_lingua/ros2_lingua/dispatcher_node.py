@@ -102,6 +102,9 @@ class DispatcherNode(Node):
         # Cached action clients keyed by action name
         self._action_clients = {}
 
+        # Cached service clients keyed by service name
+        self._service_clients = {}
+
         # Capability cache from registry broadcast
         self._capability_map = {}
 
@@ -440,10 +443,13 @@ class DispatcherNode(Node):
         """Send a LinguaService request."""
         from ros2_lingua_interfaces.srv import LinguaService
 
-        client = self.create_client(
-            LinguaService, service_name,
-            callback_group=self._callback_group,
-        )
+        if service_name not in self._service_clients:
+            self._service_clients[service_name] = self.create_client(
+                LinguaService, service_name,
+                callback_group=self._callback_group,
+            )
+
+        client = self._service_clients[service_name]
 
         if not client.wait_for_service(timeout_sec=5.0):
             self.get_logger().warn(
